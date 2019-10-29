@@ -17,7 +17,7 @@ macro_rules! ele {
     };
     (@e (B $id:tt $($style:tt)? )) => {
         {
-            let mut pre = format!(r#"<button id="{id}" onclick="click('{id}')"  class="btn btn-default""#, id=$id.replace(" ","-"));
+            let mut pre = format!(r#"<button id="{id}"  class="btn btn-default""#, id=$id.replace(" ","-"));
             $(pre = format!(r#"{} style="{}" ""#, pre, $style);)?
             pre = format!(r#"{pre}>{name}</button>"#, pre=pre, name=$id, );
             pre

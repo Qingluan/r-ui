@@ -12,6 +12,12 @@ a rust  desktop Gui  based on web_view.
 search-ui = {git = "https://gitee.com/dark.H/r-ui.git"}
 ```
 
+#### todo
+
+[x] finish base ui.
+[ ] add list template.
+[ ] add preview mode.
+
 #### usage
 
 > a verify simple code

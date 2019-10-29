@@ -16,6 +16,7 @@ pub struct UI{
     css: String,
     js:String,
     theme:web_view::Color,
+    size:(i32, i32),
 }
 
 impl Default for UI {
@@ -29,6 +30,7 @@ impl Default for UI {
             left: 8px;
         "#};
         Self{
+            size:(360,600),
             html: d,
             css : r#"
 #search{
@@ -92,8 +94,8 @@ macro_rules! with_html {
         }
     };
 }
-
-fn log_inif(){
+#[allow(dead_code)]
+pub fn log_init(){
     let mut clog = colog::builder();
     clog.format(|buf, record| {
             writeln!(buf,
@@ -107,23 +109,21 @@ fn log_inif(){
     clog.init();
 }
 
-pub fn with_search_extend<F>(how_handle: F, html:&UI)
-where F: Fn(&str, &str, &str){
+pub fn with_search_extend<F>(how_handle:&mut  F, html:&UI)
+where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
     search_box(how_handle, html);
 }
 
-pub fn with_search<F>(how_handle: F)
-where F: Fn(&str, &str, &str){
+pub fn with_search<F>(how_handle:&mut  F)
+where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
     let html = UI::default();
     search_box(how_handle, &html);
 }
 
-fn search_box<F> (how_handle: F, html:&UI)
-where F: Fn(&str, &str, &str)  {
+fn search_box<F> (how_handle:&mut F, html:&UI)
+where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>)  {
     // log_inif();
-    log_inif();
-    
-    let _ = view::with_build(&html.html, &html.css,&html.js, html.theme ,|_, arg|{
+    let _ = view::with_build(&html.html, &html.css,&html.js, html.theme , html.size,|webview, arg|{
         let value:serde_json::Value = match serde_json::from_str(arg){
             Ok(a) => a,
             Err(e) => {
@@ -135,12 +135,12 @@ where F: Fn(&str, &str, &str)  {
             let from_id = value.get("id").unwrap().as_str().unwrap();
             let content = value.get("content").unwrap().as_str().unwrap();
             log::info!("edit |{}| : {}", from_id.green(),content.yellow());
-            how_handle("text",from_id, content);
+            how_handle("text",from_id, content,webview);
         }else if let Some(value) = value.get("btn"){
             let from_id = value.get("id").unwrap().as_str().unwrap();
             let content = value.get("content").unwrap().as_str().unwrap();
             log::info!("btn |{}| : {}", from_id.green(),content.yellow());
-            how_handle("btn",from_id, content);
+            how_handle("btn",from_id, content, webview);
         }else{
             log::info!(" {:?}", value);
         }

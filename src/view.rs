@@ -1,8 +1,10 @@
 use web_view::*;
 use web_view::Color;
+// use web_view::render;
 
 
-pub fn with_build<F>(body:&str,style:&str,js:&str, theme:Color, invok_handler:F ) -> WVResult
+
+pub fn with_build<F>(body:&str,style:&str,js:&str, theme:Color, size:(i32,i32), invok_handler:F ) -> WVResult
 where F: FnMut(&mut web_view::WebView<'_, ()>, &str) -> WVResult
  {
     let default_css  = include_str!("template/default.css");
@@ -33,8 +35,8 @@ where F: FnMut(&mut web_view::WebView<'_, ()>, &str) -> WVResult
     let mut webview = web_view::builder()
         .title("example")
         .content(Content::Html(html))
-        .size(360, 600)
-        .resizable(true)
+        .size(size.0, size.1)
+        .resizable(false)
         .debug(true)
         .user_data(())
         .invoke_handler(invok_handler)
