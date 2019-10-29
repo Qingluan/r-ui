@@ -1,37 +1,78 @@
 # r-ui
 
-#### 介绍
+#### doc
 a rust  desktop Gui  based on web_view.
 
-#### 软件架构
-软件架构说明
+#### mvc
+
+#### install
+
+```rs
+[dependencies]
+search-ui = {git = "https://gitee.com/dark.H/r-ui.git"}
+```
+
+#### usage
+
+> a verify simple code
+```rs
+extern crate search_ui;
+fn main() {
+    search_ui::with_search(|tp, id, content|{
+        println!("input text : {}, {}, {}", tp, id , content);
+    });
+}
+```
+
+```bash
+cargo run --examples hello
+```
+
+![png](./screen.png)
 
 
-#### 安装教程
+```bash
+cargo run --examples hello2
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+```
 
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+![png](./screen2.png)
 
 
-#### 码云特技
+```rs
+#[macro_use]
+extern crate search_ui;
+use search_ui::UI;
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5.  码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+
+fn main(){
+    let mut h = with_html!{
+        (B "check it")
+        @css
+        button#check-it{
+            position: absolute;
+            bottom: 1%;
+        }
+
+        input{
+            position: absolute;
+            top: 1%;
+        }
+        @js
+        document.getElementById("check-it").addEventListener("click", function(){
+            alert("hello 2")
+        });
+    };
+    
+    search_ui::with_search_extend(|tp, id, content|{
+        println!("rpc handle here : {} {} {} ", tp, id ,content);
+    }, &h);
+    
+}
+```
+
+#### author
+
+qingluan
+
+
