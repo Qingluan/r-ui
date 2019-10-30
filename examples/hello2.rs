@@ -2,7 +2,8 @@
 extern crate search_ui;
 use search_ui::View;
 use search_ui::UI;
-
+use search_ui::utils::ToFils;
+use threadpool;
 
 fn main(){
     search_ui::log_init();
@@ -34,16 +35,32 @@ fn main(){
         }
         @js
         handle_json = function(obj){
-            list_add(obj.content);
+            list_add_all(obj.content);
         }
     };
 
     h.chain(&h2);
+    let pool = threadpool::ThreadPool::new(5);
     search_ui::with_search_extend(&mut |tp, id, content, webview|{
         println!("rpc handle here : {} {} {} ", tp, id ,content);
-        // let m:&str = content
-        webview.render(id, content);
-        let _ = webview.set_title(&format!("input text : {}, {}", tp, id ));
+        
+        if content.len() >= 3{
+            let t = content.re();
+            let handler = webview.handle();
+            pool.execute(move||{
+                handler.dispatch(move |webview| {
+                // let tx = search_ui::view::get_sender();
+                println!("-> job {} ", "try");
+                
+                let a = "./".as_file().ein(move |f| t.is_match(f));
+                webview.render_with_list(&a);
+                println!("-> job [{}] ", a.len());
+                Ok(())
+                }).unwrap();
+            });    
+        }
+        
+        
     }, &h);
     
 }

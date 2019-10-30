@@ -1,11 +1,25 @@
 use web_view::*;
+
 // use web_view::Color;
-
+// use colored::Colorize;
 use super::UI;
-
+// use super::View;
+// use super::backend;
 // use serde_json::Result;
+// use std::time::Duration;
+// use std::thread;
+// use std::sync::Mutex;
+// use std::sync::Arc;
+use std::sync::mpsc::{
+    Sender,
+    // Receiver,
+    // channel
+    };
 
+// use threadpool::ThreadPool;
 
+pub type S = Sender<String>;
+// type R = Receiver<String>;
 // pub fn with_build<F>(body:&str,style:&str,js:&str, theme:Color, size:(i32,i32), invok_handler:F ) -> WVResult
 pub fn with_build<F>(ui:&UI, invok_handler:F ) -> WVResult
 where F: FnMut(&mut web_view::WebView<'_, ()>, &str) -> WVResult
@@ -52,6 +66,32 @@ where F: FnMut(&mut web_view::WebView<'_, ()>, &str) -> WVResult
         .invoke_handler(invok_handler)
         .build()?;
     
+    // let handle = webview.handle();
+    
+    // thread::spawn(move || {
+    //     let lock_channel = CHANNEL.lock().unwrap();
+    //     println!("---> start background [{}]", "ok".green());
+    //     loop {
+    //         let recv_data =  match lock_channel.rx.recv(){
+    //             Ok(a) => a,
+    //             _ => {
+    //                 println!("---> end background [{}]", "end".red());
+    //                 break
+    //             }
+    //         };
+
+    //         handle
+    //             .dispatch(move |webview| {
+    //                 let data_shared = recv_data.clone();
+    //                 webview.render_with_json(&data_shared);
+    //                 Ok(())
+    //             })
+    //             .unwrap();
+            
+    //     }
+    //     thread::sleep(Duration::from_secs(1));
+    // });
+
     webview.set_color(ui.title_color);
     webview.run()
 }
@@ -59,3 +99,66 @@ where F: FnMut(&mut web_view::WebView<'_, ()>, &str) -> WVResult
 
 
 
+
+// use std::thread;
+// use std::sync::mpsc;
+// use std::time::Duration;
+
+// struct ChannelHandler {
+//     tx:S,
+//     // rx:R,
+//     // register:FnOnce(S) + Send +'static,
+// }
+
+// impl Default for ChannelHandler {
+//     fn default() -> Self{
+//         let (tx,rx) = channel::<String>();
+//         Self{
+//             tx:tx,
+//             // rx:rx,
+//             // register: nil
+//             // register:vec![]
+//         }
+//     }
+// }
+// impl ChannelHandler{
+//     #[allow(dead_code)]
+//     pub fn get_sender(&self) -> S{
+//         self.tx.clone()
+//     }
+
+// }
+
+// lazy_static!{
+//     static ref CHANNEL:Arc<Mutex<ChannelHandler>> = {
+//         Arc::new(Mutex::new(
+//             ChannelHandler::default()
+//         ))
+//     };
+
+//     static ref POOL:Arc<Mutex<ThreadPool>> = {
+//         Arc::new(Mutex::new(
+//             ThreadPool::new(10)
+//         ))
+//     };
+// }
+
+// #[allow(dead_code)]
+// pub fn get_sender() -> S{
+//     let a = CHANNEL.lock().unwrap();
+//     a.get_sender()
+// }
+
+// #[allow(dead_code)]
+// pub fn job_with<F> (handle:F) 
+// where F: FnOnce(S) + Send + 'static
+// {
+//     let pool = POOL.lock().unwrap();
+//     println!("run back [{}]","now".yellow());
+//     pool.execute(move||{
+//         let tx = get_sender();
+//         println!("run back [{}]","ready".yellow());
+//         handle(tx);
+//     });
+//     // pool.join();
+// }

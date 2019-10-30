@@ -1,20 +1,35 @@
 extern crate web_view;
+// #[macro_use]
+// extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
-use serde_json;
+
+extern crate serde_json;
+extern crate threadpool;
+// use serde_json;
 use log;
 use colog;
 use chrono::Local;
 use std::io::Write;
 use colored::Colorize;
 
-use serde::{Deserialize, Serialize};
 
-mod view;
+// use serde::{Deserialize, Serialize};
+// mod backend;
+pub mod view;
 #[macro_use]
 mod widgets;
 pub mod utils;
 
+// #[allow(dead_code)]
+// pub fn job<F>(h:F)
+// where F: FnOnce(view::S) + Send + 'static {
+//     view::job_with(h);
+// }
+
+
+
+// use serde_json::object;
 
 pub struct UI{
     html:String,
@@ -146,25 +161,75 @@ where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
 
 pub trait View{
     fn render(&mut self, id:&str, content:&str);
+    fn render_with_json(&mut self, json_data:&str);
+    fn render_with_list(&mut self, list:&Vec<String>);
 }
 
 
 #[derive(Serialize, Deserialize)]
 pub struct Rpc {
-    content: String,
+    content: Vec<String>,
     id: String,
+    tp:String,
+    
 }
 
 
+
+impl Rpc{
+    pub fn to_msg(id:&str,tp:&str, content:&str) -> String{
+        let r = Rpc{
+            id:id.to_string(),
+            tp:tp.to_string(),
+            content:vec![content.to_string()],
+        };
+        serde_json::to_string(&r).unwrap()
+    }
+}
+impl Default for Rpc{
+    fn default()->Self{
+        Self{
+            id:"send".to_string(),
+            tp:"list".to_string(),
+            content:vec![]
+        }
+    }
+}
+
 impl View for web_view::WebView<'_,()> {
+    fn render_with_list(&mut self, list:&Vec<String>){
+        let v = Rpc{
+            content: list.clone(),
+            ..Rpc::default()
+        };
+        
+        let vv = serde_json::to_string(&v).unwrap();
+        self.render_with_json(&vv);
+    }
+
     fn render(&mut self, id:&str, content:&str){
         let r = Rpc{
             id:id.to_string(),
-            content:content.to_string()
+            content:vec![content.to_string()],
+            tp:"1".to_string(),
         };
         let rpc_str = serde_json::to_string(&r).unwrap();
         let _ = self.eval(&format!("rpc.render('{}')", &rpc_str));
     }
+
+    fn render_with_json(&mut self, json_data:&str){
+        if json_data.contains("{") && json_data.contains("}"){
+            let _ = self.eval(&format!("rpc.render('{}')", json_data));
+        }else{
+            log::error!("no valid data to pass {}", json_data.red());
+        }
+        
+    }
+}
+
+#[allow(dead_code)]
+pub fn to_rpc_msg(id:&str, msg:&str) -> String{
+    Rpc::to_msg(id, "normal",msg)
 }
 
 fn search_box<F> (how_handle:&mut F, html:&UI)

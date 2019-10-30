@@ -6,10 +6,26 @@ var handle_json = function(obj){
 var list_add = function(string){
     let list = document.getElementsByClassName("list-group-flush")[0];
     if (list != null){
-        list.innerHTML = list.innerHTML + '<li class="list-group-item" ><p>' + string+ '</p></li>'
+        list.innerHTML =  '<li class="list-group-item" ><p>' + string+ '</p></li>' + list.innerHTML
     }
     
 }
+
+var list_add_all = function(ls){
+    let list = document.getElementsByClassName("list-group-flush")[0];
+    if (list != null){
+        for(i=0; i < ls.length; i++ ){
+            list.innerHTML = '<li class="list-group-item" ><p>' + ls[i] + '</p></li>' + list.innerHTML
+        }
+        
+    }
+}
+
+
+var handle_json = function(obj){
+    console.log(obj);
+}
+
 
 var rpc = {
     invoke : function(arg) { window.external.invoke(JSON.stringify(arg)); },

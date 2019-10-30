@@ -3,33 +3,13 @@ use regex::Regex;
 use std::fs::{metadata,Metadata};
 use dirs;
 use std::path::Path;
-// type F = Fn(&str) -> bool;
-// type H = Fn(&str);
 
-// for entry in WalkDir::new("foo").into_iter().filter_map(|e| e.ok()) {
-//     println!("{}", entry.path().display());
-// }
 
 pub struct FileSearcher {
     path: String, 
 }
 
 
-// pub trait FileSystem :Sized
-// where F: Fn(&str) -> bool,
-//       H: Fn(&str)
-// {
-//     fn ein(&self, filter: F) -> Vec<String>;
-//     fn with(&self, filter:F, handler: H);
-//     // fn match_with(&self, text:&str) -> bool;
-//     fn re(&self) -> Option<Regex>;
-//     fn info(&self) -> Option<Metadata>;
-//     // fn to_regex(&self) -> impl FnOnce(&str)->bool;
-// }
-
-
-
-// impl FileSystem for FileSearcher
 impl FileSearcher
 {
     #[allow(dead_code)]
@@ -58,9 +38,9 @@ impl FileSearcher
         files
     }
     #[allow(dead_code)]
-    pub fn with<F,H>(&self, filter:F, handler: H)
+    pub fn with<F,H>(&self, filter:F, handler:&mut H)
     where F: Fn(&str) -> bool + 'static,
-        H:Fn(&str)
+        H:FnMut(&str)
 
     {
         for entry in WalkDir::new(&self.path).into_iter().filter_map(|e| e.ok()) {
@@ -115,29 +95,3 @@ impl <'a> ToFils for &'a str{
         metadata(self).ok()
     }
 }
-
-// impl <'a,F,H> FileSystem<F,H> for &'a str
-// where F: Fn(&str) -> bool,
-//       H: Fn(&str)
-// {
-//     fn info(&self)-> Option<Metadata>{
-//         metadata(self).ok()
-//     }
-
-//     fn ein(&self, filter: F) -> Vec<String>
-//     where F: Fn(&str) -> bool
-//     {
-//         self.to_searcher().ein(filter)
-//     }
-
-//     fn with(&self, filter:F, handler:H)
-//     where F: Fn(&str) -> bool,
-//         H: Fn(&str)
-//     {
-//         self.to_searcher().with(filter, handler);
-//     }
-
-//     fn re(&self) -> Option<Regex>{
-//         self.to_searcher().re()
-//     }
-// }
