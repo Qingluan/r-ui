@@ -1,5 +1,6 @@
 extern crate web_view;
-
+#[macro_use]
+extern crate serde_derive;
 use serde_json;
 use log;
 use colog;
@@ -7,15 +8,21 @@ use chrono::Local;
 use std::io::Write;
 use colored::Colorize;
 
+use serde::{Deserialize, Serialize};
+
 mod view;
 #[macro_use]
 mod widgets;
+pub mod utils;
+
 
 pub struct UI{
     html:String,
     css: String,
     js:String,
     theme:web_view::Color,
+    size:(i32, i32),
+    title_color:web_view::Color,
 }
 
 impl Default for UI {
@@ -26,8 +33,10 @@ impl Default for UI {
         Self{
             html: r#""#.to_string(),
             css : r#""#.to_string(),
+            size:(360,600),
             js: "".to_string(),
             theme: web_view::Color::from((5, 44, 92)),
+            title_color:web_view::Color::from((255,255,255)),
             // theme: web_view::Color::from((5, 4, 5)),
         }
     }
@@ -109,8 +118,8 @@ macro_rules! with_html {
         }
     };
 }
-
-fn log_inif(){
+#[allow(dead_code)]
+pub fn log_init(){
     let mut clog = colog::builder();
     clog.format(|buf, record| {
             writeln!(buf,
@@ -124,23 +133,44 @@ fn log_inif(){
     clog.init();
 }
 
-pub fn with_search_extend<F>(how_handle: F, html:&UI)
-where F: Fn(&str, &str, &str){
+pub fn with_search_extend<F>(how_handle:&mut  F, html:&UI)
+where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
     search_box(how_handle, html);
 }
 
-pub fn with_search<F>(how_handle: F)
-where F: Fn(&str, &str, &str){
+pub fn with_search<F>(how_handle:&mut  F)
+where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
     let html = UI::default();
     search_box(how_handle, &html);
 }
 
-fn search_box<F> (how_handle: F, html:&UI)
-where F: Fn(&str, &str, &str)  {
+pub trait View{
+    fn render(&mut self, id:&str, content:&str);
+}
+
+
+#[derive(Serialize, Deserialize)]
+pub struct Rpc {
+    content: String,
+    id: String,
+}
+
+
+impl View for web_view::WebView<'_,()> {
+    fn render(&mut self, id:&str, content:&str){
+        let r = Rpc{
+            id:id.to_string(),
+            content:content.to_string()
+        };
+        let rpc_str = serde_json::to_string(&r).unwrap();
+        let _ = self.eval(&format!("rpc.render('{}')", &rpc_str));
+    }
+}
+
+fn search_box<F> (how_handle:&mut F, html:&UI)
+where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>)  {
     // log_inif();
-    log_inif();
-    
-    let _ = view::with_build(&html.html, &html.css,&html.js, html.theme ,|_, arg|{
+    let _ = view::with_build(&html,|webview, arg|{
         let value:serde_json::Value = match serde_json::from_str(arg){
             Ok(a) => a,
             Err(e) => {
@@ -152,17 +182,18 @@ where F: Fn(&str, &str, &str)  {
             let from_id = value.get("id").unwrap().as_str().unwrap();
             let content = value.get("content").unwrap().as_str().unwrap();
             log::info!("edit |{}| : {}", from_id.green(),content.yellow());
-            how_handle("text",from_id, content);
+            how_handle("text",from_id, content,webview);
         }else if let Some(value) = value.get("btn"){
             let from_id = value.get("id").unwrap().as_str().unwrap();
             let content = value.get("content").unwrap().as_str().unwrap();
             log::info!("btn |{}| : {}", from_id.green(),content.yellow());
-            how_handle("btn",from_id, content);
+            how_handle("btn",from_id, content, webview);
         }else{
             log::info!(" {:?}", value);
         }
         Ok(())
     });
+
 }
 
 
@@ -186,4 +217,23 @@ fn test_macro(){
     println!("html {}",h.html);
     println!("css {}",h.css);
     println!("js {}",h.js);
+}
+
+// fn to_regex_filter(se:&str) -> Box<dyn Fn(&str)->bool> {
+//     use regex::Regex;
+//     let re = Regex::new(se).unwrap_or_else(|_|{
+//         Regex::new("^aabb@@$").unwrap()
+//     });
+//     Box::new(move |text:&str| re.is_match(text))
+// }
+
+#[test]
+fn file(){
+    // use utils::FileSystem;
+    // // let ffff:Box<dyn Fn(&str) -> bool> = "screen.png$".to_regex_filter();
+    // // assert!(ffff("screen.png"), true);
+    // let f = "screen.png$".re();
+    // // assert!(f("screen.png") == true, true);
+    // let fs =  "./".ein(f);
+    // assert!(fs.len() == 2, true);
 }

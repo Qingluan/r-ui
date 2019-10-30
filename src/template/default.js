@@ -1,5 +1,22 @@
+
+var handle_json = function(obj){
+    console.log(obj);
+}
+
+var list_add = function(string){
+    let list = document.getElementsByClassName("list-group-flush")[0];
+    if (list != null){
+        list.innerHTML = list.innerHTML + '<li class="list-group-item" ><p>' + string+ '</p></li>'
+    }
+    
+}
+
 var rpc = {
     invoke : function(arg) { window.external.invoke(JSON.stringify(arg)); },
+    render : function(items) {
+        let obj = JSON.parse(items);
+        handle_json(obj);
+    }
 }
 
 Ins = document.getElementsByTagName("input");
