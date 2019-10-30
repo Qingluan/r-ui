@@ -20,25 +20,15 @@ pub struct UI{
 
 impl Default for UI {
     fn default() -> Self{
-        let d = ele!{ "search"
-            (I "search")
-            | r#"
-            margin-top: 10px;
-            width:96%;
-            border-radius: 4px;
-            left: 8px;
-        "#};
+        // let d = ele!{ "search"
+        //     (I "search")
+        //     | r#""#};
         Self{
-            html: d,
-            css : r#"
-#search{
-    position:absolute;
-    bottom:1%;
-    width:100%;
-}
-    "#.to_string(),
+            html: r#""#.to_string(),
+            css : r#""#.to_string(),
             js: "".to_string(),
             theme: web_view::Color::from((5, 44, 92)),
+            // theme: web_view::Color::from((5, 4, 5)),
         }
     }
 
@@ -60,6 +50,12 @@ impl UI {
         self.js.push_str(new);
     }
 
+    pub fn chain(&mut self, other_ui:&UI){
+        self.add_html(&other_ui.html);
+        self.add_css(&other_ui.css);
+        self.add_js(&other_ui.js);
+    }
+
     pub fn to_string(&self) -> String{
         let mut m = String::from(format!(r#"<style type="text/csstyle">{}</style>"#, &self.css));
         m.push_str(&self.html);
@@ -70,10 +66,31 @@ impl UI {
 
 #[macro_export]
 macro_rules! with_html {
-    ( $( ($ele:ident $id:tt) ),* @css $($style:tt)* ) => {
+    (@li $(( $e:ident $sid:tt )),*  @css $($style:tt)* ) => {
         {
             let mut ui = UI::default();
-            let h = ele!("main" $( ($ele $id) ),* );
+            let h = ele!(L "list-container" $( ($e $sid  ) ),*  );
+            ui.add_html(&h);
+            let css = stringify!($($style)*);
+            if css.contains("@ js"){
+                let fs:Vec<&str>  = css.split("@ js").collect();
+                let ncss = fs[0].to_string().replace(" ", "");
+                let js = fs.last().unwrap();
+                ui.add_css(&ncss);
+                ui.add_js(&js);
+            }else{
+                let ncss = css.replace(" ","");
+                ui.add_css(&ncss);
+            }
+            
+            
+            ui
+        }
+    };
+    (@div $( ($ele:ident $id:tt  ) ),* @css $($style:tt)* ) => {
+        {
+            let mut ui = UI::default();
+            let h = ele!("main" $( ($ele $id  ) ),* );
             ui.add_html(&h);
             let css = stringify!($($style)*);
             if css.contains("@ js"){
@@ -153,7 +170,7 @@ where F: Fn(&str, &str, &str)  {
 #[test]
 fn test_macro(){
 
-    let mut h = with_html!{
+    let mut h = with_html!{@li
         (I "hello"),
         (B "check it")
         @css

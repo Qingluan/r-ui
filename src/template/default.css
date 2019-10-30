@@ -2,7 +2,7 @@
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
-	font-size: 28px;
+	font-size: 18px;
 	font-family: sans-serif;
 }
 
@@ -12,10 +12,10 @@ html, body {
     background-image: url("back.png");
 }
 
-.container {
+/* .container {
 	width: 100%;
 	height: 100%;
-}
+} */
 
 .text-input-wrapper {
 	padding: 0.5em;
@@ -25,13 +25,19 @@ html, body {
 	right: 0;
 }
 
+.list-group-item {
+    padding: 0.5rem 1rem;
+    /* background-color: rgb(5, 44,92); */
+}
+
 .text-input {
-	width: 100%;
+	/* width: 100%; */
 	line-height: 1.5em;
 	padding: 0 0.2em;
 	height: 1.5em;
-	outline: none;
-	border: none;
+    outline: none;
+    border:none;
+	border-radius: 0 0 4px 4px;
 	color: #4a148c;
 	background-color: rgba(255, 255, 255, 0.87);
 }

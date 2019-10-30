@@ -4,26 +4,29 @@ use search_ui::UI;
 
 
 fn main(){
-
-    let mut h = with_html!{
-        (B "check it")
+    let mut h = with_html!{@li
+        (P "hello world"),
+        (P "hello world"),
+        (P "hello world")
         @css
-        button#check-it{
-            position: absolute;
-            bottom: 1%;
+        ul>li{
+            margin:5px;
+            border-radius:8px;
+        }
+    };
+    let h2 = with_html!{@div
+        (I "t")
+        @css
+        div#main{
+            margin-top:10px;
         }
 
         input{
             position: absolute;
-            top: 1%;
+            bottom: 1%;
         }
-        @js
-        document.getElementById("check-it").addEventListener("click", function(){
-            alert("hello 2")
-        });
     };
-    h.add_js("console.log('hllo');");
-    println!("html {}",&h.to_string());
+    h.chain(&h2);
     search_ui::with_search_extend(|tp, id, content|{
         println!("rpc handle here : {} {} {} ", tp, id ,content);
     }, &h);
