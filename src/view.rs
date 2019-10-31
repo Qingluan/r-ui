@@ -18,6 +18,10 @@ pub const MSG_SEP:&str =  " -|- ";
 pub type R = Receiver<String>;
 pub type S = Sender<String>;
 
+// struct Broadcast{
+//     tx: S,
+// }
+
 lazy_static!{
     static ref POOL:Mutex<threadpool::ThreadPool> = {
         Mutex::new(
@@ -35,13 +39,16 @@ where F: FnOnce(S, &R) + Send +'static
     let jquery = include_str!("template/jquery.min.js");
     let default_js  = include_str!("template/default.js");
     let theme = ui.theme;
-    let body = ui.html.clone();
+    let mut body = ui.html.clone();
     let js = ui.js.clone();
     let style = ui.css.clone();
     let size = ui.size;
     let mut theme_css = format!(r#"
 	background-color: rgb{theme};
     "#, theme=&format!("({},{},{})",theme.r,theme.g,theme.b));
+    if body.contains("[[THEME]]"){
+        body = body.replace("[[THEME]]", &theme_css);
+    }
     theme_css = theme_css.replace("++", "{");
     theme_css = theme_css.replace("--", "}");
     let html = format!(r#"

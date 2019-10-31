@@ -1,6 +1,10 @@
 
 #[macro_export]
 macro_rules! ele {
+    // ((P)) => {
+    //     let progressbar = include_str!("template/progress.html");
+    //         progressbar
+    // };
     (L $id:tt $(( $($sub:tt)* )),*  ) => {
         {
             let mut contents = String::new();
@@ -20,8 +24,21 @@ macro_rules! ele {
         }
     };
     // (@li () ) => {};
-    
-    (@e (P $text:tt $($style:tt)?  )) => {
+    (@e (P $id:tt $($style:tt)? ) ) => {
+        {
+            r#"<div id="progressbar" class="pro-bar" style="height: 80%;width: 10px;background: white;
+                                                left: -3%;
+                                                top:20px;
+                                                position: absolute;
+                                                border: 2;
+                                                border-radius: 8px;
+                                                padding: 2px;
+                                                box-shadow: aqua;
+                                                border: 1px solid;
+            "><div id="progressbar-now" class="pro-bar" style="bottom: 22;[[THEME]]height: 70%;border-radius: 9px;width: 100;"></div></div>"#
+        }
+    };
+    (@e (T $text:tt $($style:tt)?  )) => {
         {
             let p_= ele!(@dom (p  "id-text" "text-p text" $($style)? ));
             p_.replace("><", &format!(">{}<", $text))

@@ -18,7 +18,7 @@ use colored::Colorize;
 // mod backend;
 pub mod view;
 #[macro_use]
-mod widgets;
+pub mod widgets;
 pub mod utils;
 pub mod action;
 
@@ -217,7 +217,7 @@ pub struct Rpc {
     content: Vec<String>,
     id: String,
     tp:String,
-    
+    progress:String,
 }
 
 pub fn rpc_from(rx:&view::R) -> (String,String, String){
@@ -225,10 +225,47 @@ pub fn rpc_from(rx:&view::R) -> (String,String, String){
     m.split_twice(view::MSG_SEP)
 }
 
-pub fn rpc_to(id:&str, tp:&str, content:&Vec<String>, tx:view::S){
+pub fn rpc_msg_progress(id:&str, tp:&str, content:&str, pro:usize,tx:view::S){
     let r = Rpc{
         id:id.to_string(),
         tp:tp.to_string(),
+        progress:format!("{}",pro),
+        content:vec![content.to_string()],
+    };
+    let c = serde_json::to_string(&r).expect("trans to json failed!");
+    tx.send(c).expect("send to view failed");
+}
+
+
+pub fn rpc_msg(id:&str, tp:&str, content:&str, tx:view::S){
+    let r = Rpc{
+        id:id.to_string(),
+        tp:tp.to_string(),
+        progress:"none".to_string(),
+        content:vec![content.to_string()],
+    };
+    let c = serde_json::to_string(&r).expect("trans to json failed!");
+    tx.send(c).expect("send to view failed");
+}
+
+pub fn rpc_list_pro(id:&str, tp:&str, pro:usize, content:&Vec<String>, tx:view::S){
+    let r = Rpc{
+        id:id.to_string(),
+        tp:tp.to_string(),
+        progress:format!("{}",pro),
+        content:content.clone(),
+    };
+
+    let c = serde_json::to_string(&r).expect("trans to json failed!");
+    tx.send(c).expect("send to view failed");
+}
+
+
+pub fn rpc_list(id:&str, tp:&str, content:&Vec<String>, tx:view::S){
+    let r = Rpc{
+        id:id.to_string(),
+        tp:tp.to_string(),
+        progress:"none".to_string(),
         content:content.clone(),
     };
 
@@ -242,6 +279,7 @@ impl Rpc{
         let r = Rpc{
             id:id.to_string(),
             tp:tp.to_string(),
+            progress:"none".to_string(),
             content:vec![content.to_string()],
         };
         serde_json::to_string(&r).unwrap()
@@ -252,6 +290,7 @@ impl Default for Rpc{
         Self{
             id:"send".to_string(),
             tp:"list".to_string(),
+            progress:"none".to_string(),
             content:vec![]
         }
     }
@@ -272,6 +311,7 @@ impl <'a>View<'a> for web_view::WebView<'a,()> {
         let r = Rpc{
             id:id.to_string(),
             content:vec![content.to_string()],
+            progress:"none".to_string(),
             tp:"1".to_string(),
         };
         let rpc_str = serde_json::to_string(&r).unwrap();

@@ -1,12 +1,42 @@
-
+var timestamp = function (){
+    var date = new Date();
+    var timestamp = date.getTime();
+    return timestamp;
+}
 var rpc = {
     invoke : function(arg) { 
         let a = JSON.stringify(arg);
         console.log(a);
         window.external.invoke(a); 
     },
+    progress: function(arg){
+        if ($("div#progressbar").attr("last") == null){
+            $("div#progressbar").animate({
+                left:"2%"
+            },700);
+        }
+        setTimeout(function(){
+            let last = $("div#progressbar").attr("last");
+            let now = timestamp();
+            if (now -last >= 1990){
+                $("div#progressbar").animate({
+                    left:"-3%"
+                },1000);
+                $("div#progressbar").attr("last",null);
+            }
+        },2000);
+        $("div#progressbar").attr("last", timestamp());        
+        $("div#progressbar > div#progressbar-now").animate({
+            height: arg.progress + "%"
+        },500 ,function(){
+            $("div#progressbar").attr("height", arg.progress % 101 + "%");
+        });
+    },
     render : function(items) {
         let obj = JSON.parse(items);
+        if (obj.progress != null){
+            rpc.progress(obj)   
+        }
         handle_json(obj);
         rpc.init();
     },
@@ -86,13 +116,6 @@ var list_add_all = function(ls){
         
     }
 }
-
-
-
-var handle_json = function(obj){
-    console.log(obj);
-}
-
 
 
 

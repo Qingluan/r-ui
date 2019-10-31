@@ -59,3 +59,8 @@ html, body {
 .text-input:focus {
 	background-color: #ffffff;
 }
+
+
+div#progressbar:active{
+	left:2%;
+}

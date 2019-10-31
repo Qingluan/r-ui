@@ -8,9 +8,9 @@ use search_ui::{
 fn main(){
     search_ui::log_init();
     let mut h = with_html!{@li
-        (P "hello world"),
-        (P "hello world"),
-        (P "hello world")
+        (T "hello world"),
+        (T "hello world"),
+        (T "hello world")
         @css
         ul {
             height: 80%;
@@ -20,6 +20,7 @@ fn main(){
         }
     };
     let h2 = with_html!{@div
+        (P "progress"),
         (I "t")
         @css
         div#main{
@@ -45,8 +46,11 @@ fn main(){
             println!("rpc handle here : {} {} {} ", &tp, &id ,&content);        
             if content.len()>3{
                 let t = content.t().re().unwrap();
-                let vv = "./".t().ein(move|f| t.is_match(f));
-                search_ui::rpc_to(&id, &tp, &vv, tx.clone());
+                let vv = "./".t().ein(move|f| {
+                    
+                    t.is_match(f)
+                });
+                search_ui::rpc_list_pro(&id, &tp, vv.len() as usize, &vv, tx.clone());
             }
         }        
     });
