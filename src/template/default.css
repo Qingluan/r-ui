@@ -38,6 +38,11 @@ html, body {
 	margin-top:5px;
 }
 
+.list-group-item:active{
+	margin-left:20px;
+	margin-top:5px;
+}
+
 .text-input {
 	/* width: 100%; */
 	line-height: 1.5em;

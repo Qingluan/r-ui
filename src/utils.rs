@@ -63,10 +63,36 @@ impl FileSearcher
 }
 
 pub trait ToFils {
-    fn as_file(&self) -> FileSearcher;
+    fn t(&self) -> FileSearcher;
     fn re(&self) -> Regex;
     fn info(&self) -> Option<Metadata>;
     fn name(&self) -> &str;
+}
+impl ToFils for String {
+    fn name(&self) -> &str{
+        Path::new(self).file_name().unwrap().to_str().unwrap()
+    }
+
+    fn t(&self) -> FileSearcher{
+        if self.starts_with("~/"){
+            FileSearcher{
+                path:self.replace("~", dirs::home_dir().unwrap().to_str().unwrap())
+            }
+        }else{
+            FileSearcher{
+                path:self.to_string()
+            }
+        }
+        
+    }
+
+    fn re(&self) -> Regex{
+        Regex::new(self).unwrap()
+    }
+
+    fn info(&self)-> Option<Metadata>{
+        metadata(self).ok()
+    }
 }
 
 impl <'a> ToFils for &'a str{
@@ -74,7 +100,7 @@ impl <'a> ToFils for &'a str{
         Path::new(self).file_name().unwrap().to_str().unwrap()
     }
 
-    fn as_file(&self) -> FileSearcher{
+    fn t(&self) -> FileSearcher{
         if self.starts_with("~/"){
             FileSearcher{
                 path:self.replace("~", dirs::home_dir().unwrap().to_str().unwrap())

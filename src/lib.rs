@@ -1,6 +1,6 @@
 extern crate web_view;
-// #[macro_use]
-// extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 
@@ -13,23 +13,46 @@ use chrono::Local;
 use std::io::Write;
 use colored::Colorize;
 
-
+// use serde_json::Value;
 // use serde::{Deserialize, Serialize};
 // mod backend;
 pub mod view;
 #[macro_use]
 mod widgets;
 pub mod utils;
+pub mod action;
 
-// #[allow(dead_code)]
-// pub fn job<F>(h:F)
-// where F: FnOnce(view::S) + Send + 'static {
-//     view::job_with(h);
-// }
+#[allow(unused_imports)]
+// use view::SP2;
 
 
+pub trait SP2 {
+    fn split_twice(&self, sep:&str) -> (String, String, String);
+    fn split_once(&self, sep:&str) -> (String, String);
+}
 
-// use serde_json::object;
+impl SP2 for String{
+    fn split_twice(&self, sep:&str) -> (String, String, String){
+        let mut f = self.split(sep);
+        (f.next().unwrap().to_string(),f.next().unwrap().to_string(),f.next().unwrap().to_string())
+    }
+    fn split_once(&self, sep:&str) -> (String, String){
+        let mut f = self.split(sep);
+        (f.next().unwrap().to_string(),f.next().unwrap().to_string())
+    }
+}
+
+impl <'a>SP2 for &'a str{
+    fn split_twice(&self, sep:&str) -> (String, String, String){
+        let mut f = self.split(sep);
+        (f.next().unwrap().to_string(),f.next().unwrap().to_string(),f.next().unwrap().to_string())
+    }
+    fn split_once(&self, sep:&str) -> (String, String){
+        let mut f = self.split(sep);
+        (f.next().unwrap().to_string(),f.next().unwrap().to_string())
+    }
+}
+
 
 pub struct UI{
     html:String,
@@ -90,8 +113,31 @@ impl UI {
 
 #[macro_export]
 macro_rules! with_html {
+    (@html $(($expr:expr)),* @css $($style:tt)* ) =>{
+        {
+            use search_ui::UI;
+            let mut ui = UI::default();
+            $(
+                let html:String = $expr;
+                ui.add_html(&html);
+            )*
+            let css = stringify!($($style)*);
+            if css.contains("@ js"){
+                let fs:Vec<&str>  = css.split("@ js").collect();
+                let ncss = fs[0].to_string().replace(" ", "");
+                let js = fs.last().unwrap();
+                ui.add_css(&ncss);
+                ui.add_js(&js);
+            }else{
+                let ncss = css.replace(" ","");
+                ui.add_css(&ncss);
+            }
+            ui
+        }
+    };
     (@li $(( $e:ident $sid:tt )),*  @css $($style:tt)* ) => {
         {
+            use self::UI;
             let mut ui = UI::default();
             let h = ele!(L "list-container" $( ($e $sid  ) ),*  );
             ui.add_html(&h);
@@ -148,18 +194,18 @@ pub fn log_init(){
     clog.init();
 }
 
-pub fn with_search_extend<F>(how_handle:&mut  F, html:&UI)
-where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
+pub fn with_search_extend<'a,F>(html:&UI,how_handle:F)
+where F: Fn(view::S, &view::R) +Send +'static {
     search_box(how_handle, html);
 }
 
-pub fn with_search<F>(how_handle:&mut  F)
-where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>){
+pub fn with_search<'a,F>(how_handle:F)
+where F: Fn(view::S, &view::R) +Send +'static {
     let html = UI::default();
     search_box(how_handle, &html);
 }
 
-pub trait View{
+pub trait View<'a>{
     fn render(&mut self, id:&str, content:&str);
     fn render_with_json(&mut self, json_data:&str);
     fn render_with_list(&mut self, list:&Vec<String>);
@@ -174,6 +220,21 @@ pub struct Rpc {
     
 }
 
+pub fn rpc_from(rx:&view::R) -> (String,String, String){
+    let m = rx.recv().expect("recv failed");
+    m.split_twice(view::MSG_SEP)
+}
+
+pub fn rpc_to(id:&str, tp:&str, content:&Vec<String>, tx:view::S){
+    let r = Rpc{
+        id:id.to_string(),
+        tp:tp.to_string(),
+        content:content.clone(),
+    };
+
+    let c = serde_json::to_string(&r).expect("trans to json failed!");
+    tx.send(c).expect("send to view failed");
+}
 
 
 impl Rpc{
@@ -196,7 +257,7 @@ impl Default for Rpc{
     }
 }
 
-impl View for web_view::WebView<'_,()> {
+impl <'a>View<'a> for web_view::WebView<'a,()> {
     fn render_with_list(&mut self, list:&Vec<String>){
         let v = Rpc{
             content: list.clone(),
@@ -232,32 +293,12 @@ pub fn to_rpc_msg(id:&str, msg:&str) -> String{
     Rpc::to_msg(id, "normal",msg)
 }
 
-fn search_box<F> (how_handle:&mut F, html:&UI)
-where F: FnMut(&str, &str, &str, &mut web_view::WebView<'_, ()>)  {
+
+fn search_box<'a,F> (how_handle:F, html:&UI)
+where F: FnOnce(view::S, &view::R) + Send +'static{
     // log_inif();
-    let _ = view::with_build(&html,|webview, arg|{
-        let value:serde_json::Value = match serde_json::from_str(arg){
-            Ok(a) => a,
-            Err(e) => {
-                log::info!("err {}",e.to_string().red());
-                serde_json::from_str(r#"{}"#).unwrap()
-            }
-        };
-        if let Some(value) = value.get("text"){
-            let from_id = value.get("id").unwrap().as_str().unwrap();
-            let content = value.get("content").unwrap().as_str().unwrap();
-            log::info!("edit |{}| : {}", from_id.green(),content.yellow());
-            how_handle("text",from_id, content,webview);
-        }else if let Some(value) = value.get("btn"){
-            let from_id = value.get("id").unwrap().as_str().unwrap();
-            let content = value.get("content").unwrap().as_str().unwrap();
-            log::info!("btn |{}| : {}", from_id.green(),content.yellow());
-            how_handle("btn",from_id, content, webview);
-        }else{
-            log::info!(" {:?}", value);
-        }
-        Ok(())
-    });
+    // view::job_with(how_handle);
+    let _ = view::with_build(&html,how_handle);
 
 }
 
@@ -284,13 +325,7 @@ fn test_macro(){
     println!("js {}",h.js);
 }
 
-// fn to_regex_filter(se:&str) -> Box<dyn Fn(&str)->bool> {
-//     use regex::Regex;
-//     let re = Regex::new(se).unwrap_or_else(|_|{
-//         Regex::new("^aabb@@$").unwrap()
-//     });
-//     Box::new(move |text:&str| re.is_match(text))
-// }
+
 
 #[test]
 fn file(){

@@ -1,7 +1,7 @@
 extern crate search_ui;
 fn main() {
-    search_ui::with_search(&mut |tp, id, content, web_view|{
+    search_ui::with_search(move |_, rx|{
+        let (tp, id ,content) = search_ui::rpc_from(rx);
         println!("input text : {}, {}, {}", tp, id , content);
-        let _ = web_view.set_title(&format!("input text : {}, {}", tp, id ));
     });
 }

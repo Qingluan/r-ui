@@ -1,4 +1,70 @@
 
+var rpc = {
+    invoke : function(arg) { 
+        let a = JSON.stringify(arg);
+        console.log(a);
+        window.external.invoke(a); 
+    },
+    render : function(items) {
+        let obj = JSON.parse(items);
+        handle_json(obj);
+        rpc.init();
+    },
+    render_list: function(items_str) {
+        $(".list-group").remove();
+        document.body.innerHTML += items_str;
+        rpc.init();
+    },
+    init: function(){
+        Ins = document.getElementsByTagName("input");
+        for(i=0; i< Ins.length ; i++ ){
+            if ($(Ins[i]).attr("listend") == null){
+                Ins[i].addEventListener("input", function (evt) {
+                    rpc.invoke({
+                        tp: 'text',
+                        content: this.value,
+                        id: this.id
+                    });
+                })
+                // Ins[i].listend = "input";
+                $(Ins[i]).attr("listend", "input");
+            }
+            
+        }
+        Btns = document.getElementsByClassName("btn");
+        for(i=0; i< Btns.length ; i++ ){
+            if ($(Btns[i]).attr("listend") == null){
+                Btns[i].addEventListener("click", function () {
+                    rpc.invoke({
+                        btn:{
+                            content: this.value,
+                            id: this.id
+                        }
+                    });
+                })
+                
+                $(Btns[i]).attr("listend","btn");
+            }
+        }
+
+        Listitems = document.getElementsByClassName("list-group-item");
+        for(i=0; i< Listitems.length ; i++ ){
+            if ($(Listitems[i]).attr("listend") == null){
+                Listitems[i].addEventListener("click", function () {
+                    click(this.id);
+                })
+                $(Listitems[i]).attr("listend","lclick");
+            }
+        }
+
+        $(".list-group-item").dblclick(function(){
+            dbclicklistener(this);
+            click(this.id, 'db');
+        });
+        
+    }
+}
+
 var handle_json = function(obj){
     console.log(obj);
 }
@@ -22,61 +88,49 @@ var list_add_all = function(ls){
 }
 
 
+
 var handle_json = function(obj){
     console.log(obj);
 }
 
 
-var rpc = {
-    invoke : function(arg) { window.external.invoke(JSON.stringify(arg)); },
-    render : function(items) {
-        let obj = JSON.parse(items);
-        handle_json(obj);
-    }
-}
 
-Ins = document.getElementsByTagName("input");
-for(i=0; i< Ins.length ; i++ ){
-    Ins[i].addEventListener("input", function (evt) {
-        rpc.invoke({
-            text:{
-                content: this.value,
-                id: this.id
-            }
-        });
-    })
-}
-Btns = document.getElementsByClassName("btn");
-for(i=0; i< Btns.length ; i++ ){
-    Btns[i].addEventListener("click", function () {
-        rpc.invoke({
-            btn:{
-                content: this.value,
-                id: this.id
-            }
-        });
-    })
+
+var dbclicklistener = function(e){
+    $(e).animate({
+        "margin-left":"360px",
+        "margin-top":"-500px",
+        "opacity": 0.3
+      }, 1000, function() {
+        $(e).remove()
+    });
 }
 
 
-
-function click(id) {
+function click(id, tp) {
+    console.log("click id", id);
     let ele = document.getElementById(id);
-    rpc.invoke({
-        btn:{
-            content:ele.value,
+    if (ele == null){
+        return;
+    }
+    if (ele.id == null){
+        ele.id = "no_id";
+    }
+    if (tp == null){
+        rpc.invoke({
+            tp:"btn",
+            content:'click',
             id:ele.id
-        }
-    })
+            }
+        )
+    }else{
+        rpc.invoke({
+            tp:"btn",
+            content:tp,
+            id:ele.id
+            }
+        )
+    }   
 }
-// Bts = document.getElementsByClassName("btn");
-// for(i=0; i< Ins.length ; i++ ){
-//     Ins[i].addEventListener(Ins[i].id, function (evt) {
-//         rpc.invoke({
-//             btn:{
-//                 content: this.value,
-//                 id: this.id
-//             }
-//         });
-//     })
-// }
+
+window.onload = function() { rpc.init(); };
