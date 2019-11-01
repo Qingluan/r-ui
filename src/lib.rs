@@ -21,6 +21,7 @@ pub mod view;
 pub mod widgets;
 pub mod utils;
 pub mod action;
+pub mod net;
 
 #[allow(unused_imports)]
 // use view::SP2;
