@@ -1,6 +1,17 @@
+use futures::{future, Future, Stream};
 use reqwest;
-use reqwest::header::USER_AGENT;
-use reqwest::header::{HeaderMap,HeaderValue, HeaderName};
+use reqwest::{
+    header::USER_AGENT,
+    Response,
+    header::{
+        HeaderMap,
+        HeaderValue,
+        HeaderName}
+};
+use hyper::{
+    Response  as HRes,
+    body::Body
+};
 // use std::collections::HashMap;
 use std::str::from_utf8;
 
@@ -28,6 +39,7 @@ impl Payload{
     pub fn send(&self) -> reqwest::Response{
         let cli = reqwest::Client::new();
         let body = self.data.clone();
+        println!("---> {}" ,&self.url);
         match self.method.as_str() {
             "GET" => {
                 cli.get(&self.url)
@@ -55,10 +67,51 @@ impl Payload{
     pub fn ua(&mut self, new_ua:&str) {
         self.headers.insert(USER_AGENT,HeaderValue::from_str(new_ua).expect("tr faild"));
     }
+
+    pub fn res_to_res_and_str(res: &HRes<Body>) -> String{
+        // let b = res.body();
+        // b.concat2();
+        let mut buf = String::from(&format!("{:?} {} ok\r\n", res.version(), res.status()));
+        for (k,v) in res.headers(){
+            buf.push_str(&format!("{}: {}\r\n", k, v.to_str().unwrap()))
+        }
+        // buf.push_str(&format!("\r\n{:?}", res.body()));
+        buf
+    }
 }
 
 pub trait Req {
     fn to_req(&self) -> Option<Payload>;
+}
+
+impl <'a>From<&'a str> for Payload {
+    fn from(w: &'a str) -> Payload{
+        w.to_req().unwrap()
+    }
+}
+
+pub trait Res{
+    fn to_string(&mut self) -> String;
+}
+
+impl Res for  Response{
+    fn to_string(&mut self) -> String{
+        let mut  back = String::from(
+            &format!("{:?} {:?} ok\r\n", self.version(),  self.status())
+        );
+        // let code =
+        println!("{:?}", self);
+        for (k,v ) in self.headers(){
+            back.push_str(&format!("{}: {}\r\n", k,v.clone().to_str().unwrap() ));
+        }
+        if let Ok(body) = self.text(){
+            if body.len() > 0{
+                back.push_str(&format!("\r\n\r\n{}", body ));
+            }
+        }
+        back
+    }
+
 } 
 
 impl <'a>Req for &'a str{
@@ -75,12 +128,15 @@ impl <'a>Req for &'a str{
                 ..Payload::default()
             };
             let _ = req.headers.iter().map(|v|{
-                if v.name == "Host"{
-                    pay.url = format!("http://{}{}", from_utf8(v.value).expect("decode utf8 failed"), req.path.unwrap());
+                if v.name == "host"{
+                    pay.url = format!("{}",req.path.unwrap());
                     pay.host = from_utf8(v.value).expect("dec utf8 failed").to_string();
+                }else{
+
                 }
                 pay.headers.insert(HeaderName::from_bytes(v.name.as_bytes()).unwrap(), HeaderValue::from_bytes(v.value).expect("dec utf8"));
             }).collect::<Vec<_>>();
+            println!("u:{} | h:{}", &pay.url, &pay.host);
             return Some(pay);
         }
 

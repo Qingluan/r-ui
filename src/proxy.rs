@@ -2,14 +2,10 @@ use futures::{future, Future, Stream};
 use hyper::{ 
     HeaderMap, Method, Body, Uri,
     Version,
-    StatusCode
+    StatusCode,
+    // Response
     };
 use reqwest::header::HOST;
-// use gotham::handler::{HandlerFuture, IntoHandlerError};
-// use gotham::helpers::http::response::create_empty_response;
-// use gotham::router::builder::{bulild_simple_router, DefineSingleRoute, DrawRoutes};
-
-// use gotham::router::builder::{StateData, StaticResponseExtender};
 use gotham::{
     state::{
         // FromState,
@@ -19,30 +15,79 @@ use gotham::{
         IntoHandlerError,
         HandlerFuture,
     },
-    helpers::http::response::create_response
+    helpers::http::response::{
+        // create_response,
+        create_empty_response
+    }
 };
 
-// use super::net::Payload;
-use std::str;
-// use std::io::BufWriter;
+use super::net::{
+    Payload,
+    Req,
+    // Res
+};
+use std::{
+    str,
+    sync::{
+        Mutex,
+        mpsc::{
+            Sender,Receiver,
+            channel
+        }
+    }
+};
 
 use colored::Colorize;
+
+pub struct Brd{
+    tx: Sender<String>,
+    // rx: Receiver<String>
+}
+impl Brd{
+    fn new_brd(&mut self)  {
+        // let mut s = BRD.lock().unwrap();
+        let (tx,rx) = channel::<String>();
+        self.tx = tx;
+        // self.rx = rx;
+    } 
+}
+
+lazy_static!{
+    static ref BRD:Mutex<Brd> = {
+        let (tx,_) = channel::<String>();
+        Mutex::new(
+            Brd{
+                tx:tx,
+                // rx:rx
+            }
+        )
+    };
+}
+
+pub fn brd_once(msg:&str) {
+    let b = BRD.lock().unwrap();
+    b.tx.send(msg.to_string()).expect("send error");
+}
+
+fn regist_brd() -> Receiver<String>{
+    let (tx, rx) = channel::<String>();
+    let mut b = BRD.lock().unwrap();
+    b.tx  = tx;
+    rx
+}
+
 
 
 /// Extract the main elements of the request except for the `Body`
 fn print_request_elements(mut state: State) ->  Box<HandlerFuture>  {
-    
-    // let method = Method::borrow_from(&state);
-    // let uri = Uri::borrow_from(&state);
-    // let http_version = Version::borrow_from(&state);
-    // let mut headers = HeaderMap::borrow_from(&state).clone();
-    let mut res = String::new(); 
     let v = state.take::<Body>().concat2().then(move |chunk| match chunk {
         Ok(chunk) => {
             let method = state.borrow::<Method>().clone();
             let uri = state.borrow::<Uri>().clone();
             let http_version = state.borrow::<Version>();
-    
+
+            let mut res  = create_empty_response(&state, StatusCode::OK);
+                
             let mut headers = state.borrow::<HeaderMap>().clone();
             let content = str::from_utf8(&chunk.into_bytes()).unwrap().to_string();
             if uri.scheme_str() == Some("http"){
@@ -51,48 +96,40 @@ fn print_request_elements(mut state: State) ->  Box<HandlerFuture>  {
                 let mut headers_str = String::new();
             
                 for (k,v ) in headers {
-                    headers_str.push_str(&format!("{:?}: {:?}\r\n", k.unwrap(),v.to_str()) );        
+                    headers_str.push_str(&format!("{}: {}\r\n", k.unwrap(), v.to_str().unwrap() ) );        
                 }
-                println!("{} {} {:?}\r\n{}\r\n\r\n{}",method.to_string().yellow(), uri, http_version,headers_str.blue(), &content.green() );
-        
+                let req_str = format!("{} {} {:?}\r\n{}\r\n\r\n{}",method.to_string(), uri, http_version,headers_str, &content);
+                println!("{}", req_str.yellow());
+                
+                let mut req_res = req_str.to_req().unwrap().send();
+                // let res_copy = req_res.clone();
+                if !req_res.status().is_success() {
+                    res  = create_empty_response(&state, StatusCode::NOT_FOUND);
+                
+                }
+                let back_headers = res.headers_mut();
+                for  (k,v) in req_res.headers(){
+                    back_headers.insert(k, v.clone());
+                }
+
+                let b= Body::from(req_res.text().unwrap()); 
+                *res.body_mut() = b.into(); 
+
+
+                let rx = regist_brd();
+                if &rx.recv().expect("no recv") != "ok"{
+                    res = create_empty_response(&state, StatusCode::OK);
+                }
+
+                
+                // println!("{}", Payload::res_to_res_and_str(&res).green());
             }
-            let res = create_response(&state, StatusCode::OK, mime::TEXT_PLAIN, content);
                 
             future::ok((state, res))
         },
         Err(e) => future::err((state, e.into_handler_error() ))
 
-        //future::err((state, "nothing"))  e.into_handler_error()
     });
-    // Box::new(v)
-
-    // headers.insert(HOST, uri.host().unwrap().parse().unwrap());
-    // if uri.scheme_str() == Some("http"){
-        // let f = Body::borrow_from(&state);
-        
-        // let mut buf: Vec<&u8> = vec![];
-        // buf.write_all(f);
-        // body.to_string();
-        // let strea = body.concat2();
-        // let s = f.concat2();
-        //     .then(|full_body| match full_body {
-        //     Ok(valid_body) => {
-        //         let body_content = valid_body.into_bytes();
-        //         // Perform decoding on request body
-        //         println!("{}", &str::from_utf8(&body_content).expect("to utf8 X"));
-        //         future::ok((state, ()))
-        //     }
-        //     Err(e) => future::err((state, e.into_handler_error())),
-        // });
-        // let pay = Payload::{
-        //     uri: uri.to_string(),
-        //     headers: headers.clone(),
-
-        // }
-    // }
-    
-    // println!("path {:?}", path.parts);
-    // (&state, res)
     Box::new(v)
 }
 

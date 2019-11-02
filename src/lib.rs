@@ -9,7 +9,7 @@ extern crate threadpool;
 
 extern crate futures;
 extern crate gotham;
-#[macro_use]
+// #[macro_use]
 extern crate gotham_derive;
 // extern crate hyper;
 extern crate mime;
