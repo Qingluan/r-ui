@@ -6,12 +6,24 @@ extern crate serde_derive;
 
 extern crate serde_json;
 extern crate threadpool;
+
+extern crate futures;
+extern crate gotham;
+#[macro_use]
+extern crate gotham_derive;
+// extern crate hyper;
+extern crate mime;
+
+
+
+
 // use serde_json;
 use log;
 use colog;
 use chrono::Local;
 use std::io::Write;
 use colored::Colorize;
+
 
 // use serde_json::Value;
 // use serde::{Deserialize, Serialize};
@@ -22,6 +34,7 @@ pub mod widgets;
 pub mod utils;
 pub mod action;
 pub mod net;
+pub mod proxy;
 
 #[allow(unused_imports)]
 // use view::SP2;
