@@ -22,7 +22,7 @@ use gotham::{
 };
 
 use super::net::{
-    Payload,
+    // Payload,
     Req,
     // Res
 };
@@ -34,7 +34,9 @@ use std::{
             Sender,Receiver,
             channel
         }
-    }
+    },
+    time,
+    thread
 };
 
 use colored::Colorize;
@@ -44,6 +46,7 @@ pub struct Brd{
     // rx: Receiver<String>
 }
 impl Brd{
+    #[allow(unused)]
     fn new_brd(&mut self)  {
         // let mut s = BRD.lock().unwrap();
         let (tx,rx) = channel::<String>();
@@ -66,7 +69,12 @@ lazy_static!{
 
 pub fn brd_once(msg:&str) {
     let b = BRD.lock().unwrap();
-    b.tx.send(msg.to_string()).expect("send error");
+    match b.tx.send(msg.to_string()){
+        Ok(_) => {},
+        _ => {
+            println!("{}", "filaed");
+        }
+    }
 }
 
 fn regist_brd() -> Receiver<String>{
