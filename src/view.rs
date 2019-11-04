@@ -18,10 +18,6 @@ pub const MSG_SEP:&str =  " -|- ";
 pub type R = Receiver<String>;
 pub type S = Sender<String>;
 
-// struct Broadcast{
-//     tx: S,
-// }
-
 lazy_static!{
     static ref POOL:Mutex<threadpool::ThreadPool> = {
         Mutex::new(
@@ -36,6 +32,7 @@ where F: FnOnce(S, &R) + Send +'static
  {
     let default_css  = include_str!("template/default.css");
     let css_boot  = include_str!("template/bootstrap-4/css/bootstrap.min.css");
+    let b64_js = include_str!("template/base64.min.js");
     let jquery = include_str!("template/jquery.min.js");
     let default_js  = include_str!("template/default.js");
     let theme = ui.theme;
@@ -66,7 +63,7 @@ where F: FnOnce(S, &R) + Send +'static
         <script type="text/javascript">{scripts}</script>
     </body>
 </html>
-"#, body=body,jquery=jquery,css=&style, default_css=&format!("{}\n{}",css_boot , default_css), theme=theme_css, scripts=&format!("{}\n{}",default_js , &js));
+"#, body=body,jquery=jquery,css=&style, default_css=&format!("{}\n{}",css_boot , default_css), theme=theme_css, scripts=&format!("{}\n{}\n{}", b64_js,default_js , &js));
     
     
     let pool = POOL.lock().expect("lock thread failed");
@@ -129,5 +126,3 @@ where F: FnOnce(S, &R) + Send +'static
     webview.set_color(ui.title_color);
     webview.run()
 }
-
-

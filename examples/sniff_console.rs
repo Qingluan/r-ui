@@ -2,11 +2,13 @@ extern crate search_ui;
 
 use search_ui::proxy::{
     server_start,
-    brd_once
+    PASS_REQ,
+    how_to_handler_sniff
 };
 use std::thread;
 use std::io::{stdin,stdout,Write};
-    
+use colored::Colorize;
+
 fn input() -> String{
     let mut s=String::new();
     print!("Please enter some text: ");
@@ -18,17 +20,26 @@ fn input() -> String{
     if let Some('\r')=s.chars().next_back() {
         s.pop();
     }
+    // print!("\r");
     s
 }
 
 fn main() {
     thread::spawn(move ||{
-        server_start();
+        server_start("localhost:7878");
     });
     
     loop {
-        let s = input();
-        brd_once(&s);
+        how_to_handler_sniff(|msg|{
+            println!("{}", msg.yellow());
+            let f = input();
+            if f == "ok" || f.len() ==0{
+                format!("{}{}",PASS_REQ, msg)
+            }else{
+                format!("{}{}","no", msg)
+            }
+        })
+        
     }
 
 }

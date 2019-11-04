@@ -1,4 +1,4 @@
-use futures::{future, Future, Stream};
+// use futures::{future, Future, Stream};
 use reqwest;
 use reqwest::{
     header::USER_AGENT,
@@ -39,7 +39,7 @@ impl Payload{
     pub fn send(&self) -> reqwest::Response{
         let cli = reqwest::Client::new();
         let body = self.data.clone();
-        println!("---> {}" ,&self.url);
+        // println!("---> {}" ,&self.url);
         match self.method.as_str() {
             "GET" => {
                 cli.get(&self.url)
@@ -136,7 +136,7 @@ impl <'a>Req for &'a str{
                 }
                 pay.headers.insert(HeaderName::from_bytes(v.name.as_bytes()).unwrap(), HeaderValue::from_bytes(v.value).expect("dec utf8"));
             }).collect::<Vec<_>>();
-            println!("u:{} | h:{}", &pay.url, &pay.host);
+            // println!("u:{} | h:{}", &pay.url, &pay.host);
             return Some(pay);
         }
 

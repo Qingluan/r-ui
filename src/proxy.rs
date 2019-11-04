@@ -3,12 +3,10 @@ use hyper::{
     HeaderMap, Method, Body, Uri,
     Version,
     StatusCode,
-    // Response
     };
 use reqwest::header::HOST;
 use gotham::{
     state::{
-        // FromState,
         State
     },
     handler::{
@@ -16,55 +14,84 @@ use gotham::{
         HandlerFuture,
     },
     helpers::http::response::{
-        // create_response,
         create_empty_response
     }
 };
 
 use super::net::{
-    // Payload,
     Req,
-    // Res
 };
 use std::{
     str,
     sync::{
         Mutex,
-        mpsc::{
-            Sender,Receiver,
-            channel
-        }
     },
-    time,
-    thread
 };
-
-use colored::Colorize;
-
-pub struct Brd{
-    tx: Sender<String>,
-    // rx: Receiver<String>
-}
-impl Brd{
-    #[allow(unused)]
-    fn new_brd(&mut self)  {
-        // let mut s = BRD.lock().unwrap();
-        let (tx,rx) = channel::<String>();
-        self.tx = tx;
-        // self.rx = rx;
-    } 
-}
 
 lazy_static!{
     static ref BRD:Mutex<Brd> = {
-        let (tx,_) = channel::<String>();
+        let (tx,rx) = bounded::<String>(2);
         Mutex::new(
             Brd{
                 tx:tx,
-                // rx:rx
+                rx:rx
             }
         )
     };
+}
+
+
+pub const PASS_REQ:&str = "[[PASS-THIS-REQ]]";
+pub const REQ_HANDLE:&str = "[[REQ_HANDLE]]" ;
+pub const REQ_SERVER:&str = "[[REQ_SERVER]]";
+
+use crossbeam_channel::{
+    bounded,
+    Sender as MSender,
+    Receiver as MReceiver
+};
+
+
+use colored::Colorize;
+pub type S<T> = MSender<T>;
+pub type R<T> = MReceiver<T>;
+// type SS<T> = Sender<S<T>>;
+// type RS<T> = Receiver<S<T>>;
+
+pub struct Brd{
+    tx: S<String>,
+    rx: R<String>
+}
+
+impl Brd{
+    pub fn regist_brd(&self) -> (S<String> ,R<String>){
+        (self.tx.clone(), self.rx.clone())
+    }
+    pub fn recv_with(rx:R<String>,tx:S<String>, name:&str) -> Option<String>{
+        
+        let tag = format!("[[{}]]", name);
+        loop {
+            let m = rx.recv().expect("recv failed");
+            if m.starts_with(&tag){
+                return Some(m.replace(&tag, ""));
+            }else{
+                tx.send(m).expect("try again");
+            }
+        }
+    }
+
+    pub fn send_to(tx:S<String>, name:&str, msg:&str){
+        // let m = rx.recv().expect("recv failed");
+        let content = format!("[[{}]]{}", name, msg);
+        tx.send(content).expect("send to failed");
+    }
+
+}
+
+
+pub fn global_brd() -> (S<String> ,R<String>){
+    let s = BRD.lock().expect("lock failed");
+    s.regist_brd()
 }
 
 pub fn brd_once(msg:&str) {
@@ -77,83 +104,86 @@ pub fn brd_once(msg:&str) {
     }
 }
 
-fn regist_brd() -> Receiver<String>{
-    let (tx, rx) = channel::<String>();
-    let mut b = BRD.lock().unwrap();
-    b.tx  = tx;
-    rx
+
+fn state_to_req(state:&State, body:&[u8]) -> String{
+    let method = state.borrow::<Method>().clone();
+    let uri = state.borrow::<Uri>().clone();
+    let http_version = state.borrow::<Version>();
+    let mut headers_str = String::new();
+    let mut headers = state.borrow::<HeaderMap>().clone();
+    let content = str::from_utf8(body).unwrap().to_string();
+    headers.insert(HOST, uri.host().unwrap().parse().unwrap());
+    for (k,v ) in headers {
+        headers_str.push_str(&format!("{}: {}\r\n", k.unwrap(), v.to_str().unwrap() ) );        
+    }
+    format!("{} {} {:?}\r\n{}\r\n\r\n{}",method.to_string(), uri, http_version,headers_str, &content)
 }
 
-
-
-/// Extract the main elements of the request except for the `Body`
-fn print_request_elements(mut state: State) ->  Box<HandlerFuture>  {
+pub fn sniff(mut state:State) -> Box<HandlerFuture>{
+    
     let v = state.take::<Body>().concat2().then(move |chunk| match chunk {
         Ok(chunk) => {
-            let method = state.borrow::<Method>().clone();
-            let uri = state.borrow::<Uri>().clone();
-            let http_version = state.borrow::<Version>();
+            let req_str = state_to_req(&state, &chunk.into_bytes());
+            // let method = state.borrow::<Method>().clone();
+            // let uri = state.borrow::<Uri>().clone();
+            // let http_version = state.borrow::<Version>();
 
-            let mut res  = create_empty_response(&state, StatusCode::OK);
-                
-            let mut headers = state.borrow::<HeaderMap>().clone();
-            let content = str::from_utf8(&chunk.into_bytes()).unwrap().to_string();
-            if uri.scheme_str() == Some("http"){
-            
-                headers.insert(HOST, uri.host().unwrap().parse().unwrap());
-                let mut headers_str = String::new();
-            
-                for (k,v ) in headers {
-                    headers_str.push_str(&format!("{}: {}\r\n", k.unwrap(), v.to_str().unwrap() ) );        
+            let mut res = create_empty_response(&state, StatusCode::OK);
+            let (tx,rx) = global_brd();
+            Brd::send_to(tx.clone(), REQ_HANDLE, &req_str);
+            if let Some(msg) = Brd::recv_with(rx,tx,REQ_SERVER){
+                // println!("rx: {}", msg.green());
+                if msg.starts_with(PASS_REQ){
+                    let req = msg.replace(PASS_REQ,"");
+                    let mut req_res = req.to_req().unwrap().send();
+                    if !req_res.status().is_success() {
+                        return future::ok((state, res));
+                        // res  = create_empty_response(&state, StatusCode::NOT_FOUND);
+                    }
+                    let back_headers = res.headers_mut();
+                    for  (k,v) in req_res.headers(){
+                        back_headers.insert(k, v.clone());
+                    }
+
+                    let b= Body::from(req_res.text().unwrap()); 
+                    *res.body_mut() = b.into(); 
                 }
-                let req_str = format!("{} {} {:?}\r\n{}\r\n\r\n{}",method.to_string(), uri, http_version,headers_str, &content);
-                println!("{}", req_str.yellow());
-                
-                let mut req_res = req_str.to_req().unwrap().send();
-                // let res_copy = req_res.clone();
-                if !req_res.status().is_success() {
-                    res  = create_empty_response(&state, StatusCode::NOT_FOUND);
-                
-                }
-                let back_headers = res.headers_mut();
-                for  (k,v) in req_res.headers(){
-                    back_headers.insert(k, v.clone());
-                }
-
-                let b= Body::from(req_res.text().unwrap()); 
-                *res.body_mut() = b.into(); 
-
-
-                let rx = regist_brd();
-                if &rx.recv().expect("no recv") != "ok"{
-                    res = create_empty_response(&state, StatusCode::OK);
-                }
-
-                
-                // println!("{}", Payload::res_to_res_and_str(&res).green());
             }
-                
+
             future::ok((state, res))
         },
         Err(e) => future::err((state, e.into_handler_error() ))
-
     });
     Box::new(v)
 }
 
 
+fn proxy(state: State) ->  Box<HandlerFuture>  {
+    sniff(state)
+}
 
-/// Create a `Router`
-// fn router() -> Router {
-//     let (chain, pipelines) = single_pipeline(new_pipeline().add(CookieParser).build());
-//     build_router(chain, pipelines, |route| {
-//         route.get("/").to(handler);
-//     })
-// }
+
+pub fn how_to_handler_sniff<F>(closure:F)
+where F:Fn(&str) -> Option<String>
+{
+    
+    let (tx, rx) = global_brd();
+    if let Some(msg) = Brd::recv_with(rx,tx.clone(), REQ_HANDLE){
+        if let Some(output) = closure(&msg){
+            Brd::send_to(tx, REQ_SERVER, &output);
+        }
+        
+    }
+}
+
 
 /// Start a server and use a `Router` to dispatch requests
-pub fn server_start() {
-    let addr = "127.0.0.1:7878";
-    println!("Listening for requests at http://{}", addr);
-    gotham::start(addr, || Ok(print_request_elements));
+pub fn server_start(addr:&str) {
+    // let addr = "127.0.0.1:7878";
+    println!("Listening for requests at http://{}", addr.yellow());
+    // gotham::start(addr, || Ok(print_request_elements));
+    let ad:&'static str = Box::leak(addr.to_string().into_boxed_str());
+    // gotham::test::TestServer::with_timeout()
+    // gotham.
+    gotham::start(ad, || Ok(proxy));
 }

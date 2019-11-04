@@ -7,6 +7,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
 
+extern crate base64;
 extern crate futures;
 extern crate gotham;
 // #[macro_use]
@@ -14,15 +15,20 @@ extern crate gotham_derive;
 // extern crate hyper;
 extern crate mime;
 
+extern crate crossbeam;
+
+// #[macro_use]
+extern crate crossbeam_channel;
+
 
 
 
 // use serde_json;
-use log;
+// use log;
 use colog;
 use chrono::Local;
 use std::io::Write;
-use colored::Colorize;
+// use colored::Colorize;
 
 
 // use serde_json::Value;
@@ -79,9 +85,6 @@ pub struct UI{
 
 impl Default for UI {
     fn default() -> Self{
-        // let d = ele!{ "search"
-        //     (I "search")
-        //     | r#""#};
         Self{
             html: r#""#.to_string(),
             css : r#""#.to_string(),
@@ -92,9 +95,25 @@ impl Default for UI {
             // theme: web_view::Color::from((5, 4, 5)),
         }
     }
-
 }
+
+
 impl UI {
+    
+    #[allow(unused)]
+    fn new(html:&str) -> Self{
+        // let h = html_file.read
+        Self{
+            html:html.to_string(),
+            ..Self::default()
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn set_size(&mut self, w:i32, h:i32){
+        self.size = (w, h);
+    }
+
     #[allow(dead_code)]
     pub fn add_html(&mut self, new:&str) {
         self.html.push_str("\n");
@@ -127,6 +146,7 @@ impl UI {
 
 #[macro_export]
 macro_rules! with_html {
+    // (@html $(($expr:liter)),* @css $($style:tt)* ) =>{
     (@html $(($expr:expr)),* @css $($style:tt)* ) =>{
         {
             use search_ui::UI;
@@ -151,7 +171,7 @@ macro_rules! with_html {
     };
     (@li $(( $e:ident $sid:tt )),*  @css $($style:tt)* ) => {
         {
-            use self::UI;
+            use search_ui::UI;
             let mut ui = UI::default();
             let h = ele!(L "list-container" $( ($e $sid  ) ),*  );
             ui.add_html(&h);
@@ -173,6 +193,7 @@ macro_rules! with_html {
     };
     (@div $( ($ele:ident $id:tt  ) ),* @css $($style:tt)* ) => {
         {
+            use search_ui::UI;
             let mut ui = UI::default();
             let h = ele!("main" $( ($ele $id  ) ),* );
             ui.add_html(&h);
@@ -247,7 +268,8 @@ pub fn rpc_msg_progress(id:&str, tp:&str, content:&str, pro:usize,tx:view::S){
         content:vec![content.to_string()],
     };
     let c = serde_json::to_string(&r).expect("trans to json failed!");
-    tx.send(c).expect("send to view failed");
+    let c_json = base64::encode(c.as_bytes());
+    tx.send(c_json).expect("send to view failed");
 }
 
 
@@ -259,7 +281,8 @@ pub fn rpc_msg(id:&str, tp:&str, content:&str, tx:view::S){
         content:vec![content.to_string()],
     };
     let c = serde_json::to_string(&r).expect("trans to json failed!");
-    tx.send(c).expect("send to view failed");
+    let c_json = base64::encode(c.as_bytes());
+    tx.send(c_json).expect("send to view failed");
 }
 
 pub fn rpc_list_pro(id:&str, tp:&str, pro:usize, content:&Vec<String>, tx:view::S){
@@ -287,6 +310,17 @@ pub fn rpc_list(id:&str, tp:&str, content:&Vec<String>, tx:view::S){
     tx.send(c).expect("send to view failed");
 }
 
+pub trait B64 {
+    fn b64(&self) -> Vec<String>;
+}
+
+impl B64 for Vec<String>{
+    fn b64(&self) -> Vec<String>{
+        self.iter().map(|s|{
+            base64::encode(s.as_bytes())
+        }).collect()
+    }
+}
 
 impl Rpc{
     pub fn to_msg(id:&str,tp:&str, content:&str) -> String{
@@ -299,6 +333,8 @@ impl Rpc{
         serde_json::to_string(&r).unwrap()
     }
 }
+
+
 impl Default for Rpc{
     fn default()->Self{
         Self{
@@ -311,6 +347,7 @@ impl Default for Rpc{
 }
 
 impl <'a>View<'a> for web_view::WebView<'a,()> {
+    
     fn render_with_list(&mut self, list:&Vec<String>){
         let v = Rpc{
             content: list.clone(),
@@ -333,11 +370,11 @@ impl <'a>View<'a> for web_view::WebView<'a,()> {
     }
 
     fn render_with_json(&mut self, json_data:&str){
-        if json_data.contains("{") && json_data.contains("}"){
-            let _ = self.eval(&format!("rpc.render('{}')", json_data));
-        }else{
-            log::error!("no valid data to pass {}", json_data.red());
-        }
+        // if json_data.contains("{") && json_data.contains("}"){
+        let _ = self.eval(&format!("rpc.render('{}')", json_data));
+        // }else{
+            // log::error!("no valid data to pass {}", json_data.red());
+        // }
         
     }
 }
