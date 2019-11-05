@@ -113,8 +113,18 @@ var rpc = {
             click(this.id, 'db');
             do_some("db", this.id)
         });
+
+        // document.addEventListener('DOMContentLoaded', (event) => {
+        //     document.querySelectorAll('pre code').forEach((block) => {
+                
+        //     });
+        // });
         
     }
+}
+
+var h_style = function(id){
+    return hljs.highlightBlock($(id)[0])
 }
 
 var do_some = function(tp,id, content){
@@ -181,5 +191,6 @@ function click(id, tp) {
         )
     }   
 }
+
 
 window.onload = function() { rpc.init(); };

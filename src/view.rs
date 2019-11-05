@@ -5,7 +5,6 @@ use std::sync::{
     Mutex,
 };
 use web_view::*;
-
 pub const MSG_SEP: &str = " -|- ";
 pub type R = Receiver<String>;
 pub type S = Sender<String>;
@@ -21,9 +20,12 @@ where
 {
     let default_css = include_str!("template/default.css");
     let css_boot = include_str!("template/bootstrap-4/css/bootstrap.min.css");
+    let js_boot = include_str!("template/bootstrap-4/js/bootstrap.min.js");
     let b64_js = include_str!("template/base64.min.js");
     let jquery = include_str!("template/jquery.min.js");
     let default_js = include_str!("template/default.js");
+    let hight_css = include_str!("template/darkula.css");
+    let hight_js = include_str!("template/highlight.js");
     let theme = ui.theme;
     let mut body = ui.html.clone();
     let js = ui.js.clone();
@@ -49,19 +51,25 @@ where
         {default_css}
         </style>
         <style type="text/css" >{css}</style>
+        <style type="text/css" >{hight}</style>
     </head>
     <body style="{theme}">
         {body}
         <script type="text/javascript">{jquery}</script>
+        <script type="text/javascript">{bootstrap}</script>
+        <script type="text/javascript">{hight_js}</script>
         <script type="text/javascript">{scripts}</script>
     </body>
 </html>
 "#,
+        hight = hight_css,
         body = body,
+        bootstrap = js_boot,
         jquery = jquery,
         css = &style,
         default_css = &format!("{}\n{}", css_boot, default_css),
         theme = theme_css,
+        hight_js = hight_js,
         scripts = &format!("{}\n{}\n{}", b64_js, default_js, &js)
     );
 

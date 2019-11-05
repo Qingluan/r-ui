@@ -20,6 +20,7 @@ extern crate crossbeam;
 // #[macro_use]
 extern crate crossbeam_channel;
 
+extern crate encoding;
 // use serde_json;
 // use log;
 use chrono::Local;

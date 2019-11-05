@@ -1,3 +1,5 @@
+use encoding::all::GBK;
+use encoding::{DecoderTrap, Encoding};
 use futures::{future, Future, Stream};
 use gotham::{
     handler::{HandlerFuture, IntoHandlerError},
@@ -6,7 +8,7 @@ use gotham::{
 };
 use hyper::{Body, HeaderMap, Method, StatusCode, Uri, Version};
 use reqwest::header::HOST;
-
+// use encoding_rs::GBK;
 use super::net::Req;
 use std::{str, sync::Mutex};
 
@@ -79,7 +81,11 @@ fn state_to_req(state: &State, body: &[u8]) -> String {
     let http_version = state.borrow::<Version>();
     let mut headers_str = String::new();
     let mut headers = state.borrow::<HeaderMap>().clone();
-    let content = str::from_utf8(body).unwrap().to_string();
+    let mut content = str::from_utf8(body).unwrap().to_string();
+    if content.contains("gb2312") || content.contains("gb18") {
+        println!("{}", "use gbk".green());
+        content = GBK.decode(body, DecoderTrap::Strict).unwrap();
+    }
     headers.insert(HOST, uri.host().unwrap().parse().unwrap());
     for (k, v) in headers {
         headers_str.push_str(&format!("{}: {}\r\n", k.unwrap(), v.to_str().unwrap()));
@@ -121,8 +127,16 @@ pub fn sniff(mut state: State) -> Box<HandlerFuture> {
                         for (k, v) in req_res.headers() {
                             back_headers.insert(k, v.clone());
                         }
-
-                        let b = Body::from(req_res.text().unwrap());
+                        let mut bodybuf: Vec<u8> = vec![];
+                        req_res.copy_to(&mut bodybuf).unwrap();
+                        let mut main_text = req_res.text().unwrap();
+                        if main_text.contains("charset=gb2312")
+                            || main_text.contains("charset=gb18")
+                        {
+                            println!("{}", "gbk".green());
+                            main_text = GBK.decode(&bodybuf, DecoderTrap::Strict).unwrap();
+                        }
+                        let b = Body::from(main_text);
                         *res.body_mut() = b.into();
                     } else {
                         *res.body_mut() = Body::from("DROPED this req").into();

@@ -1,4 +1,6 @@
 // use futures::{future, Future, Stream};
+use encoding::all::GBK;
+use encoding::{DecoderTrap, Encoding};
 use hyper::{body::Body, Response as HRes};
 use reqwest;
 use reqwest::{
@@ -7,6 +9,7 @@ use reqwest::{
     Response,
 };
 // use std::collections::HashMap;
+use colored::Colorize;
 use std::str::from_utf8;
 
 pub struct Payload {
@@ -95,11 +98,25 @@ impl Res for Response {
         for (k, v) in self.headers() {
             back.push_str(&format!("{}: {}\r\n", k, v.clone().to_str().unwrap()));
         }
-        if let Ok(body) = self.text() {
-            if body.len() > 0 {
-                back.push_str(&format!("\r\n\r\n{}", body));
+
+        let mut bodybuf: Vec<u8> = vec![];
+        self.copy_to(&mut bodybuf).unwrap();
+
+        let main_text = match from_utf8(&bodybuf) {
+            Ok(a) => a.to_string(),
+            _ => {
+                println!("{}", "gbk".green());
+                GBK.decode(&bodybuf, DecoderTrap::Strict).unwrap()
             }
-        }
+        };
+
+        back.push_str(&format!("\r\n\r\n{}", main_text));
+        // if let Ok(body) = self.text() {
+
+        //     if body.len() > 0 {
+        //         back.push_str(&format!("\r\n\r\n{}", body));
+        //     }
+        // }
         back
     }
 }
