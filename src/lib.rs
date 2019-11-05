@@ -179,23 +179,20 @@ macro_rules! with_html {
             $ui.add_html(&html);
         }
     };
-    (@file $base:tt @css $($css:tt)*  @js $($js:tt)* ) => {
+    (@file $base:tt @css $css:tt  @js $($js:tt)* ) => {
         {
             use std::io::Read;
             use std::fs;
             let mut buf = String::new();
             let mut f = fs::File::open($base).unwrap();
             f.read_to_alll(&mut buf);
-            let mut csss = String::new();
+            
             let mut jss = String::new();
-            $(
-                csss.push_str(&inline_style(&include_str!($css)));
-
-            )*
+            let css = inline_style(&include_str!($css));
             $(
                 jss.push_str(&inline_script(&include_str!($js)));
             )*
-            buf = buf.replace("</head>", format!("{}\n</head>", &csss));
+            buf = buf.replace("</head>", format!("{}\n</head>", &css));
             buf = buf.replace("</body>", format!("{}\n</body>", &jss));
             buf
         }
