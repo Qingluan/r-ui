@@ -2,7 +2,7 @@
 extern crate r_ui;
 use r_ui::action::ListData;
 use r_ui::utils::ToFils;
-use r_ui::widgets;
+// use r_ui::widgets;
 fn main() {
     let mut data = ListData::default();
     data.update(&"./".t().ein(|f| f.ends_with("png")));
@@ -30,7 +30,7 @@ fn main() {
         }
     };
     r_ui::with_search_extend(&h, |tx, rx| loop {
-        let (id, tp, msg) = r_ui::rpc_from(rx);
+        let (id, _tp, msg) = r_ui::rpc_from(rx);
 
         println!("click id:{}| content:{}", &id, &msg);
         if msg.contains("pro") {

@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate r_ui;
 // use r_ui::View;
-use r_ui::{utils::ToFils, UI};
+use r_ui::utils::ToFils;
 fn main() {
     r_ui::log_init();
     let mut h = with_html! {@li
