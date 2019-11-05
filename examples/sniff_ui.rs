@@ -1,14 +1,14 @@
 #[macro_use]
-extern crate search_ui;
+extern crate r_ui;
 
 use colored::Colorize;
-use search_ui::{
+use r_ui::{
     net::{Req, Res},
     proxy::{how_to_handler_sniff, server_start, PASS_REQ},
 };
 use std::thread;
 
-fn build_ui() -> search_ui::UI {
+fn build_ui() -> r_ui::UI {
     let mut ui = with_html! {
         @html
         (ele!{RAW
@@ -100,10 +100,10 @@ fn main() {
         server_start("localhost:7878");
     });
 
-    search_ui::with_search_extend(&ui, |tx, rx| loop {
+    r_ui::with_search_extend(&ui, |tx, rx| loop {
         how_to_handler_sniff(|msg| {
-            search_ui::rpc_msg_progress("list", "show", &msg, 1, tx.clone());
-            let (id, tp, nmsg) = search_ui::rpc_from(rx);
+            r_ui::rpc_msg_progress("list", "show", &msg, 1, tx.clone());
+            let (id, tp, nmsg) = r_ui::rpc_from(rx);
             println!("{} {} {}", id, tp, nmsg);
             if id == "pass" {
                 Some(format!("{}{}", PASS_REQ, &nmsg))
@@ -116,7 +116,7 @@ fn main() {
                         let msg = res.to_string();
                         // let msg =format!("<pre ><code>{}</code></pre>", &res.to_string());
                         println!("[{}]\n {}... ", "ok".green(), &msg[..20]);
-                        search_ui::rpc_msg_progress("add", "try", &msg, 100, tx.clone());
+                        r_ui::rpc_msg_progress("add", "try", &msg, 100, tx.clone());
                         println!("tr {} {} ", id, tp);
                     }
                 }

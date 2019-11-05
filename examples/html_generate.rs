@@ -1,5 +1,5 @@
 #[macro_use]
-extern crate search_ui;
+extern crate r_ui;
 
 use colored::Colorize;
 

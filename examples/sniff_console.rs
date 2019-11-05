@@ -1,6 +1,6 @@
-extern crate search_ui;
+extern crate r_ui;
 
-use search_ui::proxy::{
+use r_ui::proxy::{
     server_start,
     PASS_REQ,
     how_to_handler_sniff

@@ -1,7 +1,7 @@
-extern crate search_ui;
+extern crate r_ui;
 
 use colored::Colorize;
-use search_ui::utils::ToFils;
+use r_ui::utils::ToFils;
 
 fn main() {
     "~/Documents"

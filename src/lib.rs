@@ -202,7 +202,7 @@ macro_rules! with_html {
     };
     (@html $(($tag:tt $($id:tt)* )),* @css $($style:tt)* ) =>{
         {
-            use search_ui::UI;
+            use r_ui::UI;
             let mut ui = UI::default();
             $(
                 with_html!{@e ui
@@ -228,7 +228,7 @@ macro_rules! with_html {
 
     (@html $(($expr:expr)),* @css $($style:tt)* ) =>{
         {
-            use search_ui::UI;
+            use r_ui::UI;
             let mut ui = UI::default();
             $(
                 // let html:String = $expr;
@@ -251,7 +251,7 @@ macro_rules! with_html {
     };
     (@li $(( $e:ident $sid:tt )),*  @css $($style:tt)* ) => {
         {
-            use search_ui::UI;
+            use r_ui::UI;
             let mut ui = UI::default();
             let h = ele!(L "list-container" $( ($e $sid  ) ),*  );
             ui.add_html(&h);
@@ -273,7 +273,7 @@ macro_rules! with_html {
     };
     (@div $( ($ele:ident $id:tt  ) ),* @css $($style:tt)* ) => {
         {
-            use search_ui::UI;
+            use r_ui::UI;
             let mut ui = UI::default();
             let h = ele!("main" $( ($ele $id  ) ),* );
             ui.add_html(&h);

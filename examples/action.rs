@@ -1,13 +1,10 @@
 #[macro_use]
-extern crate search_ui;
-// use search_ui::View;
-use search_ui::{
-    UI,
-    utils::ToFils
-};
-fn main(){
-    search_ui::log_init();
-    let mut h = with_html!{@li
+extern crate r_ui;
+// use r_ui::View;
+use r_ui::{utils::ToFils, UI};
+fn main() {
+    r_ui::log_init();
+    let mut h = with_html! {@li
         (T "hello world"),
         (T "hello world"),
         (T "hello world")
@@ -19,7 +16,7 @@ fn main(){
             border-radius:8px;
         }
     };
-    let h2 = with_html!{@div
+    let h2 = with_html! {@div
         (P "progress"),
         (I "t")
         @css
@@ -40,19 +37,13 @@ fn main(){
         }
     };
     h.chain(&h2);
-    search_ui::with_search_extend(&h, move |tx, rx|{
-        loop{
-            let (tp, id ,content) = search_ui::rpc_from(rx);
-            println!("rpc handle here : {} {} {} ", &tp, &id ,&content);        
-            if content.len()>3{
-                let t = content.t().re().unwrap();
-                let vv = "./".t().ein(move|f| {
-                    
-                    t.is_match(f)
-                });
-                search_ui::rpc_list_pro(&id, &tp, vv.len() as usize, &vv, tx.clone());
-            }
-        }        
+    r_ui::with_search_extend(&h, move |tx, rx| loop {
+        let (tp, id, content) = r_ui::rpc_from(rx);
+        println!("rpc handle here : {} {} {} ", &tp, &id, &content);
+        if content.len() > 3 {
+            let t = content.t().re().unwrap();
+            let vv = "./".t().ein(move |f| t.is_match(f));
+            r_ui::rpc_list_pro(&id, &tp, vv.len() as usize, &vv, tx.clone());
+        }
     });
-    
 }

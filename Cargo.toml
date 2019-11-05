@@ -1,5 +1,5 @@
 [package]
-name = "search-ui"
+name = "r-ui"
 version = "0.1.0"
 authors = ["Qingluan <you@example.com>"]
 edition = "2018"

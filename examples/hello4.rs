@@ -1,8 +1,8 @@
 #[macro_use]
-extern crate search_ui;
-use search_ui::action::ListData;
-use search_ui::utils::ToFils;
-use search_ui::widgets;
+extern crate r_ui;
+use r_ui::action::ListData;
+use r_ui::utils::ToFils;
+use r_ui::widgets;
 fn main() {
     let mut data = ListData::default();
     data.update(&"./".t().ein(|f| f.ends_with("png")));
@@ -29,12 +29,12 @@ fn main() {
 
         }
     };
-    search_ui::with_search_extend(&h, |tx, rx| loop {
-        let (id, tp, msg) = search_ui::rpc_from(rx);
+    r_ui::with_search_extend(&h, |tx, rx| loop {
+        let (id, tp, msg) = r_ui::rpc_from(rx);
 
         println!("click id:{}| content:{}", &id, &msg);
         if msg.contains("pro") {
-            search_ui::rpc_msg(&id, "pro", &format!("{}", msg.len()), tx.clone());
+            r_ui::rpc_msg(&id, "pro", &format!("{}", msg.len()), tx.clone());
         }
     });
 }
