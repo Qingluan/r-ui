@@ -155,16 +155,6 @@ impl UI {
     }
 }
 
-#[allow(dead_code)]
-fn inline_style(s: &str) -> String {
-    format!(r#"<style type="text/css">{}</style>"#, s)
-}
-
-#[allow(dead_code)]
-fn inline_script(s: &str) -> String {
-    format!(r#"<script type="text/javascript">{}</script>"#, s)
-}
-
 #[macro_export]
 macro_rules! with_html {
     (@e $ui:ident ($tag:expr)) => {
@@ -181,20 +171,25 @@ macro_rules! with_html {
     };
     (@file $base:tt @css $css:tt  @js $($js:tt)* ) => {
         {
-            use std::io::Read;
-            use std::fs;
-            let mut buf = String::new();
-            let mut f = fs::File::open($base).unwrap();
-            f.read_to_alll(&mut buf);
-            
+
+            use r_ui::UI;
+            let mut ui = UI::default();
+
+
+
+            let mut buf = include_str!($base);
+
+
             let mut jss = String::new();
-            let css = inline_style(&include_str!($css));
+            let css = include_str!($css);
             $(
-                jss.push_str(&inline_script(&include_str!($js)));
+                jss.push_str(&include_str!($js) ) ;
             )*
-            buf = buf.replace("</head>", format!("{}\n</head>", &css));
-            buf = buf.replace("</body>", format!("{}\n</body>", &jss));
-            buf
+
+            ui.add_html(&buf);
+            ui.add_css(&css);
+            ui.add_js(&jss);
+            ui
         }
     };
     (@html $(($tag:tt $($id:tt)* )),* @css $($style:tt)* ) =>{
