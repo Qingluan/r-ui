@@ -32,6 +32,7 @@ fn main() {
             bottom: 1%;
         }
         @js
+        var R_ID=["t"];
         handle_json = function(obj){
             list_add_all(obj.content);
         }

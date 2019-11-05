@@ -6,7 +6,7 @@ var timestamp = function (){
     var timestamp = date.getTime();
     return timestamp;
 }
-var registed_id = [];
+var R_ID = [];
 var rpc = {
     invoke : function(arg) { 
         let a = JSON.stringify(arg);
@@ -63,8 +63,8 @@ var rpc = {
     init: function(){
         Ins = document.getElementsByTagName("input");
         for(i=0; i< Ins.length ; i++ ){
-            if ($(Ins[i]).attr("listend") == null){
-                if (registed_id.includes(Ins[i])){
+            if ($(Ins[i]).attr("listend") == null && R_ID.includes(Ins[i].id) ){
+                
                     Ins[i].addEventListener("input", function (evt) {
                         rpc.invoke({
                             tp: 'text',
@@ -74,15 +74,14 @@ var rpc = {
                     })
                     // Ins[i].listend = "input";
                     $(Ins[i]).attr("listend", "input");
-                }
                 
             }
             
         }
         Btns = document.getElementsByClassName("btn");
         for(i=0; i< Btns.length ; i++ ){
-            if ($(Btns[i]).attr("listend") == null){
-                if (registed_id.includes(Btns[i])){
+            if ($(Btns[i]).attr("listend") == null && R_ID.includes(Btns[i].id)){
+                
                     Btns[i].addEventListener("click", function () {
                         rpc.invoke({
                             tp: 'btn',
@@ -91,7 +90,7 @@ var rpc = {
                             
                         });
                     })
-                }
+                
                 
                 $(Btns[i]).attr("listend","btn");
             }
@@ -99,13 +98,13 @@ var rpc = {
 
         Listitems = document.getElementsByClassName("list-group-item");
         for(i=0; i< Listitems.length ; i++ ){
-            if ($(Listitems[i]).attr("listend") == null){
-                if (registed_id.includes(Listitems[i])){
+            if ($(Listitems[i]).attr("listend") == null && R_ID.includes(Listitems[i].id)){
+                
                     Listitems[i].addEventListener("click", function () {
                         click(this.id);
                     })
                     $(Listitems[i]).attr("listend","lclick");
-                }
+                
             }
         }
 
